@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "pip_options": [
+      "--upgrade-strategy",
+      "only-if-needed"
+    ],
+    "constraint_mode": "inherit"
+  },
+  "nodes": {
+    "comfyui-kjnodes": {
+      "remote": "https://github.com/kijai/ComfyUI-KJNodes.git",
+      "local": "ComfyUI-KJNodes"
+    },
+    "rgthree-comfy": {
+      "remote": "https://github.com/rgthree/rgthree-comfy.git",
+      "local": "rgthree-comfy"
+    },
+    "comfyui-videohelpersuite": {
+      "remote": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git",
+      "local": "ComfyUI-VideoHelperSuite"
+    },
+    "comfyui-essentials": {
+      "remote": "https://github.com/cubiq/ComfyUI_essentials.git",
+      "local": "ComfyUI_essentials"
+    },
+    "comfyui-easy-use": {
+      "remote": "https://github.com/yolain/ComfyUI-Easy-Use.git",
+      "local": "ComfyUI-Easy-Use"
+    },
+    "comfyui-frame-interpolation": {
+      "remote": "https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git",
+      "local": "ComfyUI-Frame-Interpolation"
+    },
+    "comfyui-ultimatesdupscale": {
+      "remote": "https://github.com/ssitu/ComfyUI_UltimateSDUpscale.git",
+      "local": "ComfyUI_UltimateSDUpscale",
+      "clone_options": [
+        "--recursive"
+      ]
+    },
+    "comfyui-impact-pack": {
+      "remote": "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
+      "local": "ComfyUI-Impact-Pack"
+    },
+    "comfyui-rmbg": {
+      "remote": "https://github.com/1038lab/ComfyUI-RMBG.git",
+      "local": "ComfyUI-RMBG"
+    },
+    "comfyui-segment-anything-2": {
+      "remote": "https://github.com/kijai/ComfyUI-segment-anything-2.git",
+      "local": "ComfyUI-segment-anything-2"
+    },
+    "comfyui-manager": {
+      "remote": "https://github.com/ltdrdata/ComfyUI-Manager.git",
+      "local": "comfyui-manager"
+    }
+  },
+  "sets": {
+    "default": [],
+    "minimax": [
+      "comfyui-kjnodes",
+      "rgthree-comfy",
+      "comfyui-videohelpersuite",
+      "comfyui-essentials",
+      "comfyui-easy-use",
+      "comfyui-frame-interpolation",
+      "comfyui-ultimatesdupscale",
+      "comfyui-impact-pack",
+      "comfyui-rmbg",
+      "comfyui-segment-anything-2",
+      "comfyui-manager"
+    ]
+  }
+}
