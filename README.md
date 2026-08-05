@@ -2,7 +2,7 @@
 
 Headless CUDA 13 ComfyUI image for MiniMax-H3 video-and-audio generation on Vast.ai and RunPod.
 
-This repository deliberately reuses the operational harness from `markwelshboy/pod-runtime` while owning its MiniMax-specific image, manifests, quant selection, SageAttention validation, and startup order. It does not inherit the CUDA, Torch, Python, ComfyUI, model, or workflow assumptions from `comfyui-inference-headless-to-desktop`.
+This repository deliberately reuses the operational harness from `markwelshboy/pod-runtime` while owning its MiniMax-specific image, manifests, quant selection, task-family selection, SageAttention validation, and startup order. It does not inherit the CUDA, Torch, Python, ComfyUI, model, or workflow assumptions from `comfyui-inference-headless-to-desktop`.
 
 ## Image stack
 
@@ -52,7 +52,32 @@ For Blackwell:
 MINIMAX_QUANT=nvfp4
 ```
 
-Only the common VAEs and the selected quant section are downloaded. `nvfp4` deliberately uses the FP8 transformer and the NVFP4 text encoder because those are the available upstream open-weight files.
+`nvfp4` deliberately uses the FP8 task transformer and the NVFP4 text encoder because those are the available upstream open-weight files.
+
+## Task-family selection
+
+`MINIMAX_TASKS` accepts a comma-separated selection of:
+
+| Value | Model family provisioned |
+|---|---|
+| `fl2va` | `minimax_h3_fl2va_*` transformer |
+| `ref2va` | `minimax_h3_ref2va_*` transformer |
+| `fl2va,ref2va` | Both task families |
+
+The default is:
+
+```bash
+MINIMAX_TASKS=fl2va,ref2va
+```
+
+This preserves the full MiniMax workflow set. A pod dedicated to one task family can provision only that transformer, for example:
+
+```bash
+MINIMAX_QUANT=fp8
+MINIMAX_TASKS=fl2va
+```
+
+Startup downloads the common VAEs, the text encoder required by `MINIMAX_QUANT`, and only the transformer sections selected by `MINIMAX_TASKS`. In the FP8 trial, selecting one task family instead of both avoids downloading the other approximately 19 GB transformer.
 
 Set `DOWNLOAD_MINIMAX_MODELS=false` to boot without automatically provisioning weights.
 
@@ -113,7 +138,8 @@ Override a build argument, for example the Sage wheel source:
 
 | Variable | Default | Purpose |
 |---|---:|---|
-| `MINIMAX_QUANT` | `fp8` | `fp8`, `int8`, or `nvfp4` model selection |
+| `MINIMAX_QUANT` | `fp8` | `fp8`, `int8`, or `nvfp4` quant selection |
+| `MINIMAX_TASKS` | `fl2va,ref2va` | Comma-separated `fl2va` and/or `ref2va` task families |
 | `DOWNLOAD_MINIMAX_MODELS` | `true` | Provision the selected manifest sections |
 | `INSTALL_CUSTOM_NODES` | `true` | Install/update the `minimax` manifest set |
 | `ENABLE_MY_WORKFLOWS_DOWNLOAD` | `true` | Sync `comfyui-templates` |
