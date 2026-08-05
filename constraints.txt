@@ -2,9 +2,9 @@
 --index-url https://download.pytorch.org/whl/cu130
 --extra-index-url https://pypi.org/simple
 
-torch==2.11.0
-torchvision==0.26.0
-torchaudio==2.11.0
+torch==2.11.0+cu130
+torchvision==0.26.0+cu130
+torchaudio==2.11.0+cu130
 
 # ComfyUI v0.30.1 direct dependencies used by MiniMax-H3 core nodes.
 comfy-aimdo==0.4.11
