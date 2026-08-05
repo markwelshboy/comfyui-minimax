@@ -63,11 +63,11 @@ hf_transfer_tune
 hf_transfer_install
 hf_transfer_verify
 
-model_pid=""
+model_download_started=false
 if [[ "${ENABLE_MODEL_MANIFEST_DOWNLOAD}" == true && "${DOWNLOAD_MINIMAX_MODELS}" == true ]]; then
   echo "[models] Starting manifest download: ${MODEL_MANIFEST_URL}"
-  (hf_download_from_manifest) &
-  model_pid=$!
+  hf_download_from_manifest
+  model_download_started=true
 else
   echo "[models] Model provisioning disabled."
 fi
@@ -92,9 +92,9 @@ fi
 
 source "${PROFILE_DIR}/src/prepare_sage.sh"
 
-if [[ -n "${model_pid}" ]]; then
+if [[ "${model_download_started}" == true ]]; then
   echo "[models] Waiting for selected MiniMax-H3 weights..."
-  wait "${model_pid}"
+  hf_download_wait
   echo "[models] Selected weights are ready."
 fi
 
