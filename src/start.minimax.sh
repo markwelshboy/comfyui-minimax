@@ -19,25 +19,73 @@ case "${MINIMAX_QUANT}" in
   *) echo "ERROR: MINIMAX_QUANT must be fp8, int8, or nvfp4; got '${MINIMAX_QUANT}'." >&2; exit 2 ;;
 esac
 
+minimax_tasks_normalized=""
+IFS=',' read -r -a minimax_task_items <<<"${MINIMAX_TASKS}"
+for minimax_task_item in "${minimax_task_items[@]}"; do
+  minimax_task="${minimax_task_item,,}"
+  minimax_task="${minimax_task//[[:space:]]/}"
+  if [[ -z "${minimax_task}" ]]; then
+    echo "ERROR: MINIMAX_TASKS contains an empty task entry: '${MINIMAX_TASKS}'." >&2
+    exit 2
+  fi
+  case "${minimax_task}" in
+    fl2va|ref2va) ;;
+    *) echo "ERROR: MINIMAX_TASKS accepts fl2va and ref2va; got '${minimax_task_item}'." >&2; exit 2 ;;
+  esac
+  case ",${minimax_tasks_normalized}," in
+    *",${minimax_task},"*) ;;
+    *)
+      if [[ -n "${minimax_tasks_normalized}" ]]; then
+        minimax_tasks_normalized+=","
+      fi
+      minimax_tasks_normalized+="${minimax_task}"
+      ;;
+  esac
+done
+if [[ -z "${minimax_tasks_normalized}" ]]; then
+  echo "ERROR: MINIMAX_TASKS must select fl2va, ref2va, or both." >&2
+  exit 2
+fi
+export MINIMAX_TASKS="${minimax_tasks_normalized}"
+
 gpu_name="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -n1 || true)"
 compute_cap="$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -n1 || true)"
 echo "GPU: ${gpu_name:-unknown}; compute capability: ${compute_cap:-unknown}"
 echo "MiniMax quant: ${MINIMAX_QUANT}"
+echo "MiniMax tasks: ${MINIMAX_TASKS}"
 if [[ "${MINIMAX_QUANT}" == nvfp4 && ! "${compute_cap}" =~ ^12\. ]]; then
   echo "WARNING: nvfp4 is intended for Blackwell; FP8 is safer on compute capability '${compute_cap:-unknown}'."
 fi
 
-export download_minimax_h3_common=false
-export download_minimax_h3_fp8=false
-export download_minimax_h3_int8=false
-export download_minimax_h3_nvfp4=false
+for minimax_section in \
+  download_minimax_h3_common \
+  download_minimax_h3_text_encoder_int8 \
+  download_minimax_h3_text_encoder_nvfp4 \
+  download_minimax_h3_fl2va_fp8 \
+  download_minimax_h3_ref2va_fp8 \
+  download_minimax_h3_fl2va_int8 \
+  download_minimax_h3_ref2va_int8; do
+  export "${minimax_section}=false"
+done
+
 if [[ "${DOWNLOAD_MINIMAX_MODELS}" == true ]]; then
   export download_minimax_h3_common=true
+
+  minimax_transformer_quant="${MINIMAX_QUANT}"
   case "${MINIMAX_QUANT}" in
-    fp8) export download_minimax_h3_fp8=true ;;
-    int8) export download_minimax_h3_int8=true ;;
-    nvfp4) export download_minimax_h3_nvfp4=true ;;
+    fp8|int8)
+      export download_minimax_h3_text_encoder_int8=true
+      ;;
+    nvfp4)
+      minimax_transformer_quant=fp8
+      export download_minimax_h3_text_encoder_nvfp4=true
+      ;;
   esac
+
+  IFS=',' read -r -a minimax_task_items <<<"${MINIMAX_TASKS}"
+  for minimax_task in "${minimax_task_items[@]}"; do
+    export "download_minimax_h3_${minimax_task}_${minimax_transformer_quant}=true"
+  done
 fi
 
 mkdir -p /root/.secrets
@@ -48,6 +96,7 @@ chmod 700 /root/.secrets
   printf 'export COMFY_STATE=%q\n' "${COMFY_STATE}"
   printf 'export COMFY_HOME=%q\n' "${COMFY_HOME}"
   printf 'export MINIMAX_QUANT=%q\n' "${MINIMAX_QUANT}"
+  printf 'export MINIMAX_TASKS=%q\n' "${MINIMAX_TASKS}"
   env | awk -F= '/^(HF_TOKEN|HUGGINGFACE_HUB_TOKEN|GIT_DEPLOY_KEY_|SSH_|TELEGRAM_)/ {print}' \
     | while IFS='=' read -r key value; do printf 'export %s=%q\n' "${key}" "${value}"; done
 } > /root/.secrets/env.current
