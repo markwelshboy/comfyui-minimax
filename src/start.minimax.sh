@@ -73,8 +73,9 @@ else
 fi
 
 if [[ "${INSTALL_CUSTOM_NODES}" == true ]]; then
-  echo "[nodes] Installing set '${CUSTOM_NODE_SETS}' from ${CUSTOM_NODES_MANIFEST_URL}"
-  install_custom_nodes
+  node_manifest="${CUSTOM_NODES_MANIFEST_URL_OVERRIDE:-${CUSTOM_NODES_MANIFEST_URL}}"
+  echo "[nodes] Installing set '${CUSTOM_NODE_SETS}' from ${node_manifest}"
+  install_custom_nodes "${node_manifest}"
   snapshot_custom_nodes_state "after-minimax-install" || true
   pip uninstall -y onnxruntime onnxruntime-gpu >/dev/null 2>&1 || true
   pip install --constraint /opt/constraints.txt onnxruntime-gpu
