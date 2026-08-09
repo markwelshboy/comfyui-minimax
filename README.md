@@ -117,11 +117,19 @@ The wheel therefore needs kernels for the GPU architectures used by this image, 
 
 ## Build
 
+The build helper uses the `buildkit-scratch` Buildx builder by default and pushes unless told otherwise:
+
 ```bash
 ./build_comfy-minimax.sh --tag latest
 ```
 
-Build locally rather than pushing:
+Build/cache only, without pushing or loading into Docker:
+
+```bash
+./build_comfy-minimax.sh --no-push --tag test
+```
+
+Explicitly load a test image into the local Docker engine:
 
 ```bash
 ./build_comfy-minimax.sh --load --tag test
@@ -133,6 +141,8 @@ Override a build argument, for example the Sage wheel source:
 ./build_comfy-minimax.sh \
   --build-arg SAGE_WHEEL_URL=https://example.invalid/sageattention.whl
 ```
+
+Override the builder with `--builder NAME` or `BUILDX_BUILDER` when required.
 
 ## Runtime variables
 
