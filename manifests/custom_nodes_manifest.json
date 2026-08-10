@@ -41,7 +41,14 @@
     },
     "comfyui-impact-pack": {
       "remote": "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
-      "local": "ComfyUI-Impact-Pack"
+      "local": "ComfyUI-Impact-Pack",
+      "pip": {
+        "options": [
+          "--upgrade-strategy",
+          "only-if-needed",
+          "--no-build-isolation"
+        ]
+      }
     },
     "comfyui-rmbg": {
       "remote": "https://github.com/1038lab/ComfyUI-RMBG.git",
