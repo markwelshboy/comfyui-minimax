@@ -57,34 +57,32 @@ if [[ "${MINIMAX_QUANT}" == nvfp4 && ! "${compute_cap}" =~ ^12\. ]]; then
   echo "WARNING: nvfp4 is intended for Blackwell; FP8 is safer on compute capability '${compute_cap:-unknown}'."
 fi
 
-for minimax_section in \
-  download_minimax_h3_common \
-  download_minimax_h3_text_encoder_int8 \
-  download_minimax_h3_text_encoder_nvfp4 \
-  download_minimax_h3_fl2va_fp8 \
-  download_minimax_h3_ref2va_fp8 \
-  download_minimax_h3_fl2va_int8 \
-  download_minimax_h3_ref2va_int8; do
-  export "${minimax_section}=false"
-done
+minimax_sections=""
+append_minimax_section() {
+  local section="${1:?section}"
+  if [[ -n "$minimax_sections" ]]; then
+    minimax_sections+=","
+  fi
+  minimax_sections+="$section"
+}
 
 if [[ "${DOWNLOAD_MINIMAX_MODELS}" == true ]]; then
-  export download_minimax_h3_common=true
+  append_minimax_section download_minimax_h3_common
 
   minimax_transformer_quant="${MINIMAX_QUANT}"
   case "${MINIMAX_QUANT}" in
     fp8|int8)
-      export download_minimax_h3_text_encoder_int8=true
+      append_minimax_section download_minimax_h3_text_encoder_int8
       ;;
     nvfp4)
       minimax_transformer_quant=fp8
-      export download_minimax_h3_text_encoder_nvfp4=true
+      append_minimax_section download_minimax_h3_text_encoder_nvfp4
       ;;
   esac
 
   IFS=',' read -r -a minimax_task_items <<<"${MINIMAX_TASKS}"
   for minimax_task in "${minimax_task_items[@]}"; do
-    export "download_minimax_h3_${minimax_task}_${minimax_transformer_quant}=true"
+    append_minimax_section "download_minimax_h3_${minimax_task}_${minimax_transformer_quant}"
   done
 fi
 
@@ -112,15 +110,9 @@ hf_transfer_tune
 hf_transfer_install
 hf_transfer_verify
 
-model_download_started=false
-if [[ "${ENABLE_MODEL_MANIFEST_DOWNLOAD}" == true && "${DOWNLOAD_MINIMAX_MODELS}" == true ]]; then
-  echo "[models] Starting manifest download: ${MODEL_MANIFEST_URL}"
-  hf_download_from_manifest
-  model_download_started=true
-else
-  echo "[models] Model provisioning disabled."
-fi
-
+# Install custom nodes before starting the bulk HF model downloader. With shallow
+# clones and hardened installs this phase is now short enough that allowing Xet
+# to saturate storage concurrently is more likely to hurt than help.
 if [[ "${INSTALL_CUSTOM_NODES}" == true ]]; then
   node_manifest="${CUSTOM_NODES_MANIFEST_URL_OVERRIDE:-${CUSTOM_NODES_MANIFEST_URL}}"
   echo "[nodes] Installing set '${CUSTOM_NODE_SETS}' from ${node_manifest}"
@@ -146,6 +138,19 @@ PY
   fi
 fi
 
+model_download_started=false
+MINIMAX_HF_STATE="${HF_MANIFEST_STATE_DIR}/base"
+if [[ "${ENABLE_MODEL_MANIFEST_DOWNLOAD}" == true && "${DOWNLOAD_MINIMAX_MODELS}" == true ]]; then
+  echo "[models] Starting manifest download: ${MODEL_MANIFEST_URL}"
+  echo "[models] Sections: ${minimax_sections}"
+  hf_download_from_manifest "${MODEL_MANIFEST_URL}" "$MINIMAX_HF_STATE" "$minimax_sections"
+  model_download_started=true
+else
+  echo "[models] Model provisioning disabled."
+fi
+
+# Light setup can overlap the base model transfer now that pip/custom-node work
+# is finished.
 if [[ "${ENABLE_MY_WORKFLOWS_DOWNLOAD}" == true ]]; then
   echo "[workflows] Syncing ${GIT_MYWORKFLOWS_REPO_ID}"
   init_repo --git "${GIT_MYWORKFLOWS_REPO_ID}" "${GIT_MYWORKFLOWS_REPO_LOCAL}"
@@ -159,7 +164,7 @@ source "${PROFILE_DIR}/src/prepare_sage.sh"
 
 if [[ "${model_download_started}" == true ]]; then
   echo "[models] Waiting for selected MiniMax-H3 weights..."
-  hf_download_wait
+  hf_download_wait "$MINIMAX_HF_STATE"
   echo "[models] Selected weights are ready."
 fi
 
