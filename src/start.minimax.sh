@@ -126,8 +126,24 @@ if [[ "${INSTALL_CUSTOM_NODES}" == true ]]; then
   echo "[nodes] Installing set '${CUSTOM_NODE_SETS}' from ${node_manifest}"
   install_custom_nodes "${node_manifest}"
   snapshot_custom_nodes_state "after-minimax-install" || true
-  pip uninstall -y onnxruntime onnxruntime-gpu >/dev/null 2>&1 || true
-  pip install --constraint /opt/constraints.txt onnxruntime-gpu
+
+  if python - <<'PY'
+try:
+    import onnxruntime as ort
+    providers = ort.get_available_providers()
+except Exception as exc:
+    print(f"[onnxruntime] provider probe failed: {exc}")
+    raise SystemExit(1)
+print("[onnxruntime] providers after custom-node install:", providers)
+raise SystemExit(0 if "CUDAExecutionProvider" in providers else 1)
+PY
+  then
+    echo "[onnxruntime] CUDA provider intact; keeping baked onnxruntime-gpu installation."
+  else
+    echo "[onnxruntime] CUDA provider missing after custom-node install; repairing GPU runtime."
+    pip uninstall -y onnxruntime onnxruntime-gpu >/dev/null 2>&1 || true
+    pip install --constraint /opt/constraints.txt --force-reinstall onnxruntime-gpu
+  fi
 fi
 
 if [[ "${ENABLE_MY_WORKFLOWS_DOWNLOAD}" == true ]]; then
