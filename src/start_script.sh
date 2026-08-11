@@ -17,4 +17,4 @@ else
 fi
 
 export POD_RUNTIME_DIR="${runtime_dir}"
-exec /opt/comfyui-minimax/src/start.minimax.sh
+exec "${POD_RUNTIME_DIR}/start.minimax.sh"
