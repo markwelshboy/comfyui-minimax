@@ -65,8 +65,16 @@ elif $PRUNE; then
   docker image prune -f || true
 fi
 
-BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-VCS_REF="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+# Keep metadata deterministic for a given source commit. A wall-clock build
+# timestamp changes on every invocation and needlessly destroys cache reuse.
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  VCS_REF="$(git rev-parse --short HEAD)"
+  BUILD_DATE_DEFAULT="$(git show -s --format=%cI HEAD 2>/dev/null || true)"
+else
+  VCS_REF="unknown"
+  BUILD_DATE_DEFAULT=""
+fi
+BUILD_DATE="${BUILD_DATE:-${BUILD_DATE_DEFAULT:-unknown}}"
 IMAGE_VERSION="${IMAGE_VERSION:-${TAG}}"
 
 args=(
