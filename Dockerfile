@@ -6,16 +6,6 @@ FROM ${CUDA_BASE_IMAGE} AS final
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
 ARG COMFYUI_REF=v0.30.1
 ARG SAGE_WHEEL_URL=https://raw.githubusercontent.com/Hearmeman24/comfyui-minimax/master/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl
-ARG BUILD_DATE=unknown
-ARG VCS_REF=unknown
-ARG IMAGE_VERSION=dev
-
-LABEL org.opencontainers.image.title="comfyui-minimax" \
-      org.opencontainers.image.description="Headless ComfyUI MiniMax-H3 runtime for Vast.ai and RunPod" \
-      org.opencontainers.image.source="https://github.com/markwelshboy/comfyui-minimax" \
-      org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.version="${IMAGE_VERSION}"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -84,3 +74,16 @@ RUN chmod +x "${MINIMAX_PROFILE_DIR}/src/"*.sh
 WORKDIR /workspace
 EXPOSE 22 8188
 ENTRYPOINT ["/opt/comfyui-minimax/src/start_script.sh"]
+
+# Keep volatile build metadata at the end so changing it cannot invalidate
+# expensive dependency/install layers above.
+ARG BUILD_DATE=unknown
+ARG VCS_REF=unknown
+ARG IMAGE_VERSION=dev
+
+LABEL org.opencontainers.image.title="comfyui-minimax" \
+      org.opencontainers.image.description="Headless ComfyUI MiniMax-H3 runtime for Vast.ai and RunPod" \
+      org.opencontainers.image.source="https://github.com/markwelshboy/comfyui-minimax" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.version="${IMAGE_VERSION}"
