@@ -4,8 +4,7 @@ ARG CUDA_BASE_IMAGE=nvidia/cuda:13.0.3-cudnn-devel-ubuntu24.04
 FROM ${CUDA_BASE_IMAGE} AS final
 
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
-ARG COMFYUI_REF=v0.30.1
-ARG SAGE_WHEEL_URL=https://raw.githubusercontent.com/Hearmeman24/comfyui-minimax/master/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl
+ARG COMFYUI_REF=v0.34.0
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -27,7 +26,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
       libgl1 libglib2.0-0 libgoogle-perftools4 \
       openssh-server \
     && rm -rf /var/lib/apt/lists/* \
-    && mkdir -p /run/sshd /var/run/sshd /workspace /opt/sage "${MINIMAX_PROFILE_DIR}" \
+    && mkdir -p /run/sshd /var/run/sshd /workspace "${MINIMAX_PROFILE_DIR}" \
     && git lfs install --system \
     && python3.12 -m venv "${VENV}"
 
@@ -59,15 +58,12 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 RUN pip freeze | grep -E '^(torch|torchvision|torchaudio|torchsde|comfy-aimdo|comfy-kitchen)==' \
       > /opt/image-stack-constraints.txt \
-    && cat /opt/image-stack-constraints.txt
+    && cat /opt/image-stack-constraints.txt \
+    && python -c "import onnxruntime as ort; p=ort.get_available_providers(); assert 'CUDAExecutionProvider' in p, p; print('onnxruntime providers OK:', p)"
 
-RUN curl -fL --retry 5 --retry-delay 3 \
-      -o /opt/sage/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
-      "${SAGE_WHEEL_URL}" \
-    && pip install --no-deps /opt/sage/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl \
-    && python -c "import sageattention; print('sageattention import OK')"
-
-COPY manifests "${MINIMAX_PROFILE_DIR}/manifests"
+# Runtime state, model provisioning, custom nodes, SageAttention bundles and
+# ComfyUI launch policy are owned by pod-runtime. The image contains only the
+# stable CUDA/Python/Torch/ComfyUI stack plus this thin MiniMax profile.
 COPY src "${MINIMAX_PROFILE_DIR}/src"
 RUN chmod +x "${MINIMAX_PROFILE_DIR}/src/"*.sh
 
@@ -82,7 +78,7 @@ ARG VCS_REF=unknown
 ARG IMAGE_VERSION=dev
 
 LABEL org.opencontainers.image.title="comfyui-minimax" \
-      org.opencontainers.image.description="Headless ComfyUI MiniMax-H3 runtime for Vast.ai and RunPod" \
+      org.opencontainers.image.description="Headless ComfyUI MiniMax runtime for Vast.ai and RunPod" \
       org.opencontainers.image.source="https://github.com/markwelshboy/comfyui-minimax" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.revision="${VCS_REF}" \

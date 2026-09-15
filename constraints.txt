@@ -1,4 +1,4 @@
-# CUDA 13 / PyTorch stack. Keep these aligned with the SageAttention wheel.
+# CUDA 13 / PyTorch stack. Keep these aligned with the image runtime.
 --index-url https://download.pytorch.org/whl/cu130
 --extra-index-url https://pypi.org/simple
 
@@ -6,9 +6,9 @@ torch==2.11.0+cu130
 torchvision==0.26.0+cu130
 torchaudio==2.11.0+cu130
 
-# ComfyUI v0.30.1 direct dependencies used by MiniMax-H3 core nodes.
-comfy-aimdo==0.4.11
-comfy-kitchen==0.2.26
+# ComfyUI v0.34.0 direct dependencies used by the current MiniMax stack.
+comfy-aimdo==0.4.15
+comfy-kitchen==0.2.31
 
 # Stable runtime pins that custom-node requirements must not replace.
 numpy==2.2.6
