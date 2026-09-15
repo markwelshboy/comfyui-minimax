@@ -59,12 +59,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 RUN pip freeze | grep -E '^(torch|torchvision|torchaudio|torchsde|comfy-aimdo|comfy-kitchen)==' \
       > /opt/image-stack-constraints.txt \
     && cat /opt/image-stack-constraints.txt \
-    && python - <<'PY'
-import onnxruntime as ort
-providers = ort.get_available_providers()
-assert 'CUDAExecutionProvider' in providers, providers
-print('onnxruntime providers OK:', providers)
-PY
+    && python -c "import onnxruntime as ort; p=ort.get_available_providers(); assert 'CUDAExecutionProvider' in p, p; print('onnxruntime providers OK:', p)"
 
 # Runtime state, model provisioning, custom nodes, SageAttention bundles and
 # ComfyUI launch policy are owned by pod-runtime. The image contains only the
